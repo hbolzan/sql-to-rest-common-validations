@@ -49,7 +49,12 @@ class CommonValidationsService(CommonMixin):
         if valid:
             subject_data = {}
             if with_name and self.check_name_service_available():
-                name_info = handle_service_request(NAME_BY_DOCUMENT_SERVICE, "name", document_number)
+                name_info = handle_service_request(
+                    NAME_BY_DOCUMENT_SERVICE,
+                    "get_name",
+                    document_type=document_type,
+                    document_number=document_number
+                )
                 subject_data = name_info["body"]["data"].get("additional_information", {})
             return self.success(document_type, document_number, subject_data)
         return self.error(document_type, document_number, expected)
