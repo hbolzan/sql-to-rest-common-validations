@@ -30,7 +30,7 @@ class CommonValidationsService(CommonMixin):
     def refresh(self):
         """
         refreshes name service check property,
-        so if name service is added after check was done,
+        so if name service is started after check was done,
         it will be checked again in the next call to cpf or cnpj
         """
         self.name_service_available = None
