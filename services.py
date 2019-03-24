@@ -4,6 +4,7 @@ from dstr_common_lib import responses
 from dstr_common_lib.common_mixin import CommonMixin
 from dstr_common_lib.util import clear_punctuation
 from dstr_common_lib.consts import HTTP_STATUS_OK, HTTP_STATUS_ERROR
+from dstr_common_lib.controller import handle_service_request
 from logic import cnpj, cpf
 
 
@@ -13,27 +14,51 @@ VALIDATIONS = {
     DOC_TYPE_CPF: cpf,
     DOC_TYPE_CNPJ: cnpj,
 }
+NAME_BY_DOCUMENT_SERVICE = "name_by_document"
 
 class CommonValidationsService(CommonMixin):
     name = "common_validations"
+
+    def __init__(self):
+        self.name_service_available = None
 
     @rpc
     def health_check(self):
         return self.common_health_check()
 
     @rpc
-    def cpf(self, cpf_number):
-        return self.validate(DOC_TYPE_CPF, cpf_number)
+    def refresh(self):
+        """
+        refreshes name service check property,
+        so if name service is added after check was done,
+        it will be checked again in the next call to cpf or cnpj
+        """
+        self.name_service_available = None
+        return responses.common(HTTP_STATUS_OK, {"en": "OK", "pt-br": "OK"})
 
     @rpc
-    def cnpj(self, cnpj_number):
-        return self.validate(DOC_TYPE_CNPJ, cnpj_number)
+    def cpf(self, cpf_number, with_name=False):
+        return self.document_validate(DOC_TYPE_CPF, cpf_number, with_name)
 
-    def validate(self, document_type, document_number):
+    @rpc
+    def cnpj(self, cnpj_number, with_name=False):
+        return self.document_validate(DOC_TYPE_CNPJ, cnpj_number, with_name)
+
+    def document_validate(self, document_type, document_number, with_name):
         valid, expected = VALIDATIONS[document_type].validate(document_number)
         if valid:
-            return self.success(document_type, document_number)
+            subject_data = {}
+            if with_name and self.check_name_service_available():
+                name_info = handle_service_request(NAME_BY_DOCUMENT_SERVICE, "name", document_number)
+                subject_data = name_info["body"]["data"].get("additional_information", {})
+            return self.success(document_type, document_number, subject_data)
         return self.error(document_type, document_number, expected)
+
+    def check_name_service_available(self):
+        if self.name_service_available is None:
+            h = handle_service_request(NAME_BY_DOCUMENT_SERVICE, "health_check")
+            self.name_service_available = h.get("http_status") == 200
+        return self.name_service_available
 
     @rpc
     def cep(self, cep_number):
