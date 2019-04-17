@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  nameko-rabbitmq:
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=/
+      - RABBITMQ_DEFAULT_USER="rabbitmq"
+      - RABBITMQ_DEFAULT_PASS="rabbitmq"
+    image: "rabbitmq:3"
+    hostname: "nameko-rabbitmq"
+    ports:
+      - "5672:5672"
+
+  common-validations:
+    environment:
+      - RABBIT_HOST=nameko-rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_USER="rabbitmq"
+      - RABBIT_PASSWORD="rabbitmq"
+    image: "hbolzan/common-validations:latest"
+    # debugging entrypoint commented
+    entrypoint: ["sh", "-c", "sleep 2073600"]
+    depends_on:
+      - nameko-rabbitmq
