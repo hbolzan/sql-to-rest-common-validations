@@ -1,3 +1,4 @@
+# docker-compose example
 version: "3"
 
 services:
@@ -10,7 +11,7 @@ services:
     hostname: "nameko-rabbitmq"
     ports:
       - "15672:15672"
-      - "5672:5672"
+      - "5672"
 
   common-validations:
     environment:
